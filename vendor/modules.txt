@@ -1,5 +1,9 @@
+# github.com/andres-erbsen/clock v0.0.0-20160526145045-9e14626cd129
+## explicit
+github.com/andres-erbsen/clock
 # github.com/patrickmn/go-cache v2.1.0+incompatible
+## explicit
 github.com/patrickmn/go-cache
-# go.uber.org/ratelimit v0.1.0
+# go.uber.org/ratelimit v0.2.0
+## explicit; go 1.14
 go.uber.org/ratelimit
-go.uber.org/ratelimit/internal/clock
