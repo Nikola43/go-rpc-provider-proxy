@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/nikola43/go-rpc-provider-proxy/pkg/proxy"
 	"github.com/panjf2000/ants"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -39,7 +40,7 @@ func main() {
 	fmt.Println(color.MagentaString("\t    Used of CPU cores: "), color.YellowString(strconv.Itoa(usedCpu)))
 	fmt.Println(color.MagentaString(""))
 
-	port := "8000"
+	port := "9000"
 	host := fmt.Sprintf("0.0.0.0:%v", port)
 
 	rpcProxies = make([]*proxy.Proxy, 0)
@@ -332,23 +333,11 @@ func nodeProxy(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func handHealth() func(w http.ResponseWriter, r *http.Request) {
-	rand.Seed(time.Now().UnixNano())
-	min := 1
-	max := len(rpcProxies)
-	ran := rand.Intn(max-min+1) + min
-	fmt.Println("handHealth")
-	fmt.Println(ran)
-	return rpcProxies[ran].PingHandler
+
+func handHealth(w http.ResponseWriter, r *http.Request) {
+	io.WriteString(w, "pong")
 }
 
-func handProxy() func(w http.ResponseWriter, r *http.Request) {
-	rand.Seed(time.Now().UnixNano())
-	min := 1
-	max := len(rpcProxies)
-	ran := rand.Intn(max-min+1) + min
-	fmt.Println("handProxy")
-	fmt.Println(ran)
+func handProxy(w http.ResponseWriter, r *http.Request) {
 
-	return rpcProxies[ran].ProxyHandler
 }
