@@ -51,6 +51,9 @@ func main() {
 		"123.123.123.123",
 	}
 
+	port = "8000"
+	proxyMethod = "POST"
+
 	rpcProxy := proxy.NewProxy(&proxy.Config{
 		ProxyURL:                   proxyURL,
 		ProxyMethod:                proxyMethod,
