@@ -51,7 +51,8 @@ func main() {
 	}
 
 	rpcProxy1 := proxy.NewProxy(&proxy.Config{
-		ProxyURL:         "https://avax-node-1.projectx.financial",
+		//ProxyURL:         "https://avax-node-1.projectx.financial",
+		ProxyURL:         "https://nd-197-254-409.p2pify.com/9963ca81d831abb76d9f20212f48329b/ext/bc/C/rpc",
 		ProxyMethod:      "POST",
 		Port:             port,
 		BlockedIps:       []string{"123.123.123.123"},
@@ -61,7 +62,8 @@ func main() {
 	rpcProxies = append(rpcProxies, rpcProxy1)
 
 	rpcProxy2 := proxy.NewProxy(&proxy.Config{
-		ProxyURL:         "https://avax-node-3.projectx.financial",
+		//ProxyURL:         "https://avax-node-2.projectx.financial",
+		ProxyURL:         "https://nd-601-718-322.p2pify.com/a5a2d2af6aa04290e44baca036af46be/ext/bc/C/rpc",
 		ProxyMethod:      "POST",
 		Port:             port,
 		BlockedIps:       []string{"123.123.123.123"},
@@ -71,7 +73,8 @@ func main() {
 	rpcProxies = append(rpcProxies, rpcProxy2)
 
 	rpcProxy3 := proxy.NewProxy(&proxy.Config{
-		ProxyURL:         "https://avax-node-4.projectx.financial",
+		//ProxyURL:         "https://avax-node-3.projectx.financial",
+		ProxyURL:         "https://nd-456-591-185.p2pify.com/1a7c2d8df6e23f6520b557316180a17c/ext/bc/C/rpc",
 		ProxyMethod:      "POST",
 		Port:             port,
 		BlockedIps:       []string{"123.123.123.123"},
@@ -82,7 +85,8 @@ func main() {
 
 
 	rpcProxy4 := proxy.NewProxy(&proxy.Config{
-		ProxyURL:         "https://avax-node-5.projectx.financial",
+		//ProxyURL:         "https://avax-node-5.projectx.financial",
+		ProxyURL:         "https://nd-439-270-845.p2pify.com/000afad3c460fc3112c099cdecbbae3c/ext/bc/C/rpc",
 		ProxyMethod:      "POST",
 		Port:             port,
 		BlockedIps:       []string{"123.123.123.123"},
@@ -90,6 +94,17 @@ func main() {
 	})
 	rpcProxy4.SetHttpClient(client)
 	rpcProxies = append(rpcProxies, rpcProxy4)
+
+	rpcProxy5:= proxy.NewProxy(&proxy.Config{
+		//ProxyURL:         "https://avax-node-5.projectx.financial",
+		ProxyURL:         "https://nd-958-335-210.p2pify.com/33d0b89eeb2488dcd9f8ba62910ca1b6/ext/bc/C/rpc",
+		ProxyMethod:      "POST",
+		Port:             port,
+		BlockedIps:       []string{"123.123.123.123"},
+		AlwaysAllowedIps: []string{"127.0.0.1"},
+	})
+	rpcProxy5.SetHttpClient(client)
+	rpcProxies = append(rpcProxies, rpcProxy5)
 
 
 	r := mux.NewRouter()
