@@ -51,7 +51,7 @@ func main() {
 	}
 
 	rpcProxy1 := proxy.NewProxy(&proxy.Config{
-		ProxyURL:         "https://avax-node-1.projectx.financial",
+		ProxyURL:         "https://nd-197-254-409.p2pify.com/9963ca81d831abb76d9f20212f48329b/ext/bc/C/rpc",
 		ProxyMethod:      "POST",
 		Port:             port,
 		BlockedIps:       []string{"123.123.123.123"},
@@ -61,7 +61,7 @@ func main() {
 	rpcProxies = append(rpcProxies, rpcProxy1)
 
 	rpcProxy2 := proxy.NewProxy(&proxy.Config{
-		ProxyURL:         "https://avax-node-3.projectx.financial",
+		ProxyURL:         "https://nd-197-254-409.p2pify.com/9963ca81d831abb76d9f20212f48329b/ext/bc/C/rpc",
 		ProxyMethod:      "POST",
 		Port:             port,
 		BlockedIps:       []string{"123.123.123.123"},
@@ -71,7 +71,7 @@ func main() {
 	rpcProxies = append(rpcProxies, rpcProxy2)
 
 	rpcProxy3 := proxy.NewProxy(&proxy.Config{
-		ProxyURL:         "https://avax-node-4.projectx.financial",
+		ProxyURL:         "https://nd-197-254-409.p2pify.com/9963ca81d831abb76d9f20212f48329b/ext/bc/C/rpc",
 		ProxyMethod:      "POST",
 		Port:             port,
 		BlockedIps:       []string{"123.123.123.123"},
@@ -82,7 +82,7 @@ func main() {
 
 
 	rpcProxy4 := proxy.NewProxy(&proxy.Config{
-		ProxyURL:         "https://avax-node-5.projectx.financial",
+		ProxyURL:         "https://nd-197-254-409.p2pify.com/9963ca81d831abb76d9f20212f48329b/ext/bc/C/rpc",
 		ProxyMethod:      "POST",
 		Port:             port,
 		BlockedIps:       []string{"123.123.123.123"},
