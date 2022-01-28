@@ -66,5 +66,5 @@ func main() {
 		SlackChannel:               slackChannel,
 	})
 
-	panic(rpcProxy.Start("/ssdfsf"))
+	panic(rpcProxy.Start("/node1"))
 }
