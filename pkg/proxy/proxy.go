@@ -369,7 +369,7 @@ func (p *Proxy) SetHttpClient(client *http.Client) {
 	p.HttpClient = client
 }
 
-/*
+
 func (p *Proxy) createHTTPClient() (*http.Client, error) {
 	transport := &http.Transport{
 		MaxIdleConnsPerHost: p.maxIdleConnections,
@@ -383,7 +383,6 @@ func (p *Proxy) createHTTPClient() (*http.Client, error) {
 
 	return client, nil
 }
-*/
 
 // sendNotification ...
 func (p *Proxy) SendNotification(msg string) {

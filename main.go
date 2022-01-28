@@ -6,12 +6,14 @@ import (
 	"errors"
 	"fmt"
 	"github.com/fatih/color"
+	"github.com/gorilla/mux"
 	"github.com/nikola43/go-rpc-provider-proxy/pkg/proxy"
 	"github.com/panjf2000/ants"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"net/http/httputil"
+	"net/url"
 	"runtime"
 	"strconv"
 	"strings"
@@ -19,6 +21,8 @@ import (
 )
 
 var rpcProxies []*proxy.Proxy
+
+var RPCClients = make(map[string]int, 0)
 
 func main() {
 
@@ -86,21 +90,40 @@ func main() {
 	rpcProxy4.SetHttpClient(client)
 	rpcProxies = append(rpcProxies, rpcProxy4)
 
-	http.HandleFunc("/ping", ss)
-	http.HandleFunc("/health", ss)
-	http.HandleFunc("/node", ss)
+
+	r := mux.NewRouter()
+
+	r.HandleFunc("/node/{hash_id}", nodeProxy)
+
+
+	//http.HandleFunc("/ping", ss)
+	//http.HandleFunc("/health", ss)
+	//http.HandleFunc("/node/{a}/aaa", nodeProxy)
 
 	//fmt.Printf("Proxying %s %s\n", rpcProxy.ProxyMethod, rpcProxy.ProxyURL.String())
-	http.ListenAndServe(host, nil)
+	http.ListenAndServe(host, r)
 }
 
-func ss(w http.ResponseWriter, r *http.Request) {
+func nodeProxy(w http.ResponseWriter, r *http.Request) {
+
+	hashId := mux.Vars(r)["hash_id"]
+	unescapedPath, err := url.PathUnescape(hashId)
+	if err != nil {
+		fmt.Println(unescapedPath)
+	}
+	fmt.Println(hashId)
+
 
 	rand.Seed(time.Now().UnixNano())
 	min := 0
 	max := len(rpcProxies) - 1
 	ran := rand.Intn(max-min+1) + min
 
+	//get id from params
+
+	// call nodes api
+
+	// if okay continue, else send unauthorized
 
 	p := rpcProxies[ran]
 
@@ -116,6 +139,9 @@ func ss(w http.ResponseWriter, r *http.Request) {
 
 	origin := r.Header.Get("Origin")
 	ipAddress, err := proxy.GetIP(r)
+
+	fmt.Println("ipAddress")
+	fmt.Println(ipAddress)
 	if err != nil {
 		fmt.Printf("ERROR ID=%v: %s\n", sessionID, err)
 		http.Error(w, "", http.StatusBadRequest)
