@@ -8,7 +8,7 @@ import (
 )
 
 // getIP returns the ip address from the http request
-func getIP(r *http.Request) (string, error) {
+func GetIP(r *http.Request) (string, error) {
 	ips := r.Header.Get("X-Forwarded-For")
 	splitIps := strings.Split(ips, ",")
 

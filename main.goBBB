@@ -1,0 +1,92 @@
+package main
+
+import (
+	"fmt"
+	"github.com/fatih/color"
+	"github.com/nikola43/go-rpc-provider-proxy/pkg/proxy"
+	"github.com/panjf2000/ants"
+	"net/http"
+	"runtime"
+	"strconv"
+	"sync"
+	"time"
+)
+
+func main() {
+
+	defer ants.Release()
+	var wg sync.WaitGroup
+
+	// system config
+	numCpu := runtime.NumCPU()
+	usedCpu := numCpu
+	runtime.GOMAXPROCS(usedCpu)
+	fmt.Println("")
+	fmt.Println(color.YellowString("  ----------------- System Info -----------------"))
+	fmt.Println(color.CyanString("\t    Number CPU cores available: "), color.GreenString(strconv.Itoa(numCpu)))
+	fmt.Println(color.MagentaString("\t    Used of CPU cores: "), color.YellowString(strconv.Itoa(usedCpu)))
+	fmt.Println(color.MagentaString(""))
+
+	// Tasks
+	var proxy1 = func() {
+		port := "8000"
+		client := &http.Client{
+			Transport: &http.Transport{MaxIdleConnsPerHost: 5, DisableKeepAlives: true},
+			Timeout:   time.Duration(3600) * time.Second,
+		}
+
+		rpcProxy := proxy.NewProxy(&proxy.Config{
+			ProxyURL:         "https://avax-node-1.projectx.financial",
+			ProxyMethod:      "POST",
+			Port:             port,
+			BlockedIps:       []string{"123.123.123.123"},
+			AlwaysAllowedIps: []string{"127.0.0.1"},
+		})
+		rpcProxy.SetHttpClient(client)
+
+		host := fmt.Sprintf("0.0.0.0:%v", port)
+		http.HandleFunc("/ping1", rpcProxy.PingHandler)
+		http.HandleFunc("/health1", rpcProxy.HealthCheckHandler)
+		http.HandleFunc("/node1", rpcProxy.ProxyHandler)
+
+		//fmt.Printf("Proxying %s %s\n", rpcProxy.ProxyMethod, rpcProxy.ProxyURL.String())
+		http.ListenAndServe(host, nil)
+		wg.Done()
+	}
+
+	var proxy2 = func() {
+		port := "8001"
+		client := &http.Client{
+			Transport: &http.Transport{MaxIdleConnsPerHost: 5, DisableKeepAlives: true},
+			Timeout:   time.Duration(3600) * time.Second,
+		}
+
+		rpcProxy := proxy.NewProxy(&proxy.Config{
+			ProxyURL:         "https://avax-node-2.projectx.financial",
+			ProxyMethod:      "POST",
+			Port:             port,
+			BlockedIps:       []string{"123.123.123.123"},
+			AlwaysAllowedIps: []string{"127.0.0.1"},
+		})
+		rpcProxy.SetHttpClient(client)
+
+		host := fmt.Sprintf("0.0.0.0:%v", port)
+		http.HandleFunc("/ping2", rpcProxy.PingHandler)
+		http.HandleFunc("/health2", rpcProxy.HealthCheckHandler)
+		http.HandleFunc("/node2", rpcProxy.ProxyHandler)
+
+		//fmt.Printf("Proxying %s %s\n", rpcProxy.ProxyMethod, rpcProxy.ProxyURL.String())
+		http.ListenAndServe(host, nil)
+		wg.Done()
+	}
+
+
+	// add task to ants pool
+	wg.Add(1)
+	_ = ants.Submit(proxy1)
+
+	wg.Add(1)
+	_ = ants.Submit(proxy2)
+
+	wg.Wait()
+}

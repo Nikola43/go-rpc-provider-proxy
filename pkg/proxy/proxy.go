@@ -36,23 +36,23 @@ type Config struct {
 
 // Proxy ...
 type Proxy struct {
-	httpClient                 *http.Client
-	proxyURL                   *url.URL
-	proxyMethod                string
-	port                       string
+	HttpClient                 *http.Client
+	ProxyURL                   *url.URL
+	ProxyMethod                string
+	Port                       string
 	maxIdleConnections         int
 	requestTimeout             int
 	method                     string
-	sessionID                  int
-	logLevel                   string
-	authorizationSecret        string
-	ratelimit                  ratelimit.Limiter
-	blockedIps                 map[string]bool
-	alwaysAllowedIps           map[string]bool
-	cache                      *cache.Cache
+	SessionID                  int
+	LogLevel                   string
+	AuthorizationSecret        string
+	Ratelimit                  ratelimit.Limiter
+	BlockedIps                 map[string]bool
+	AlwaysAllowedIps           map[string]bool
+	Cache                      *cache.Cache
 	leakyBucketLimitPerSecond  int
-	softCapIPRequestsPerMinute int
-	hardCapIPRequestsPerMinute int
+	SoftCapIPRequestsPerMinute int
+	HardCapIPRequestsPerMinute int
 	slackWebhookURL            string
 	slackChannel               string
 }
@@ -107,21 +107,21 @@ func NewProxy(config *Config) *Proxy {
 	}
 
 	return &Proxy{
-		port:                       port,
-		proxyURL:                   proxyURL,
-		proxyMethod:                method,
+		Port:                       port,
+		ProxyURL:                   proxyURL,
+		ProxyMethod:                method,
 		maxIdleConnections:         100,
 		requestTimeout:             3600,
-		sessionID:                  0,
-		logLevel:                   config.LogLevel,
-		authorizationSecret:        config.AuthorizationSecret,
-		ratelimit:                  rl,
-		blockedIps:                 blockedIps,
-		alwaysAllowedIps:           alwaysAllowedIps,
-		cache:                      cache,
+		SessionID:                  0,
+		LogLevel:                   config.LogLevel,
+		AuthorizationSecret:        config.AuthorizationSecret,
+		Ratelimit:                  rl,
+		BlockedIps:                 blockedIps,
+		AlwaysAllowedIps:           alwaysAllowedIps,
+		Cache:                      cache,
 		leakyBucketLimitPerSecond:  lps,
-		softCapIPRequestsPerMinute: softCapIPRequestsPerMinute,
-		hardCapIPRequestsPerMinute: hardCapIPRequestsPerMinute,
+		SoftCapIPRequestsPerMinute: softCapIPRequestsPerMinute,
+		HardCapIPRequestsPerMinute: hardCapIPRequestsPerMinute,
 		slackWebhookURL:            config.SlackWebhookURL,
 		slackChannel:               config.SlackChannel,
 	}
@@ -135,7 +135,7 @@ func (p *Proxy) PingHandler(w http.ResponseWriter, r *http.Request) {
 // HealthCheckHandler ...
 func (p *Proxy) HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	payload := []byte(`{"jsonrpc":"2.0","method":"web3_clientVersion","params":[],"id":42}`)
-	url := fmt.Sprintf("http://127.0.0.1:%v", p.port)
+	url := fmt.Sprintf("http://127.0.0.1:%v", p.Port)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
 	if err != nil {
 		err := fmt.Sprintf("Health check error: %s", err.Error())
@@ -167,33 +167,33 @@ func (p *Proxy) HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 
 // ProxyHandler ...
 func (p *Proxy) ProxyHandler(w http.ResponseWriter, r *http.Request) {
-	p.ratelimit.Take()
-	p.sessionID++
-	sessionID := p.sessionID
+	p.Ratelimit.Take()
+	p.SessionID++
+	sessionID := p.SessionID
 
 	r.Close = true
 	defer r.Body.Close()
 
 	origin := r.Header.Get("Origin")
-	ipAddress, err := getIP(r)
+	ipAddress, err := GetIP(r)
 	if err != nil {
 		fmt.Printf("ERROR ID=%v: %s\n", sessionID, err)
 		http.Error(w, "", http.StatusBadRequest)
 	}
 
-	if _, ok := p.blockedIps[ipAddress]; ok {
+	if _, ok := p.BlockedIps[ipAddress]; ok {
 		err := errors.New("Blocked: Ip address blocked")
 		fmt.Printf("ERROR ID=%v: %s IP=%s\n", sessionID, err, ipAddress)
 		http.Error(w, "", http.StatusTooManyRequests)
 		return
 	}
 
-	rateLimitCacheKey := fmt.Sprintf("ratelimit:%s", ipAddress)
+	rateLimitCacheKey := fmt.Sprintf("Ratelimit:%s", ipAddress)
 
 	// don't rate limit IPs that are always allowed
-	if _, ok := p.alwaysAllowedIps[ipAddress]; !ok {
+	if _, ok := p.AlwaysAllowedIps[ipAddress]; !ok {
 		count := 0
-		cached, expiration, found := p.cache.Get(rateLimitCacheKey)
+		cached, expiration, found := p.Cache.Get(rateLimitCacheKey)
 		if found {
 			count = cached.(int)
 		}
@@ -201,27 +201,27 @@ func (p *Proxy) ProxyHandler(w http.ResponseWriter, r *http.Request) {
 		tryAgainInSeconds := expiration.Sub(time.Now()).Seconds()
 
 		// send slack notification on soft cap rate limit reached for IP
-		if count == p.softCapIPRequestsPerMinute {
-			notification := fmt.Sprintf("⚠️ SOFT cap reached (%v req/min) IP=%s ORIGIN=%s PROXY=%s ID=%v\n", count, ipAddress, origin, p.proxyURL.Hostname(), sessionID)
+		if count == p.SoftCapIPRequestsPerMinute {
+			notification := fmt.Sprintf("⚠️ SOFT cap reached (%v req/min) IP=%s ORIGIN=%s PROXY=%s ID=%v\n", count, ipAddress, origin, p.ProxyURL.Hostname(), sessionID)
 			fmt.Printf(notification)
-			p.sendNotification(notification)
+			p.SendNotification(notification)
 		}
 
 		// send slack notification on hard cap rate limit reached for IP
-		if count == p.hardCapIPRequestsPerMinute {
+		if count == p.HardCapIPRequestsPerMinute {
 			seenCacheKey := fmt.Sprintf("seen:%s", ipAddress)
-			if _, _, found := p.cache.Get(seenCacheKey); !found {
-				notification := fmt.Sprintf("🚫 HARD cap reached (%v req/min) IP=%s ORIGIN=%s PROXY=%s ID=%v\n", count, ipAddress, origin, p.proxyURL.Hostname(), sessionID)
+			if _, _, found := p.Cache.Get(seenCacheKey); !found {
+				notification := fmt.Sprintf("🚫 HARD cap reached (%v req/min) IP=%s ORIGIN=%s PROXY=%s ID=%v\n", count, ipAddress, origin, p.ProxyURL.Hostname(), sessionID)
 				fmt.Printf(notification)
-				p.sendNotification(notification)
+				p.SendNotification(notification)
 
 				// makes sure that notification is only sent once during rate limit cycle
-				p.cache.Set(seenCacheKey, true, time.Duration(expiration.Unix()-time.Now().Unix())*time.Second)
+				p.Cache.Set(seenCacheKey, true, time.Duration(expiration.Unix()-time.Now().Unix())*time.Second)
 			}
 		}
 
 		// prevent request if hard cap rate limit reached for IP
-		if count >= p.hardCapIPRequestsPerMinute {
+		if count >= p.HardCapIPRequestsPerMinute {
 			err := fmt.Sprintf("Too many requests: Rate limit exceeded. Try again in %.0fs", tryAgainInSeconds)
 			fmt.Printf("ERROR ID=%v: %s IP=%s\n", sessionID, err, ipAddress)
 			http.Error(w, "", http.StatusTooManyRequests)
@@ -229,11 +229,11 @@ func (p *Proxy) ProxyHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		count++
-		p.cache.Set(rateLimitCacheKey, count, 1*time.Minute)
+		p.Cache.Set(rateLimitCacheKey, count, 1*time.Minute)
 	}
 
 	// check base64 encoded bearer token if auth check enabled
-	if p.authorizationSecret != "" {
+	if p.AuthorizationSecret != "" {
 		reqToken := r.Header.Get("Authorization")
 		splitToken := strings.Split(reqToken, "Bearer")
 		if (len(splitToken)) != 2 {
@@ -252,7 +252,7 @@ func (p *Proxy) ProxyHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		decodedToken := string(decoded)
-		if p.authorizationSecret != decodedToken {
+		if p.AuthorizationSecret != decodedToken {
 			err := errors.New("Unauthorized: Invalid auth token")
 			fmt.Printf("ERROR ID=%v: %s IP=%s\n", sessionID, err, ipAddress)
 			http.Error(w, "", http.StatusUnauthorized)
@@ -273,7 +273,7 @@ func (p *Proxy) ProxyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if p.logLevel == "debug" {
+	if p.LogLevel == "debug" {
 		fmt.Printf("REQUEST ID=%v: %s [%s] %s %s %s %s\n", sessionID, ipAddress, time.Now().String(), r.Method, r.URL.String(), r.UserAgent(), string(requestBody))
 	}
 
@@ -289,12 +289,12 @@ func (p *Proxy) ProxyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.Method != p.proxyMethod {
+	if r.Method != p.ProxyMethod {
 		http.Error(w, "Not supported", http.StatusNotFound)
 		return
 	}
 
-	req, err := http.NewRequest(p.proxyMethod, p.proxyURL.String(), bodyRdr2)
+	req, err := http.NewRequest(p.ProxyMethod, p.ProxyURL.String(), bodyRdr2)
 	if err != nil {
 		fmt.Printf("ERROR ID=%v: %s IP=%s\n", sessionID, err, ipAddress)
 		http.Error(w, "", http.StatusInternalServerError)
@@ -319,7 +319,7 @@ func (p *Proxy) ProxyHandler(w http.ResponseWriter, r *http.Request) {
 	// which is required to make proxy work with Alchemy
 	req.ContentLength = int64(len(requestBody))
 
-	if p.logLevel == "debug" {
+	if p.LogLevel == "debug" {
 		httpMsg, err := httputil.DumpRequestOut(req, true)
 		if err != nil {
 			fmt.Printf("ERROR ID=%v: %s IP=%s\n", sessionID, err, ipAddress)
@@ -330,7 +330,7 @@ func (p *Proxy) ProxyHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(string(httpMsg))
 	}
 
-	resp, err := p.httpClient.Do(req)
+	resp, err := p.HttpClient.Do(req)
 	if err != nil {
 		fmt.Printf("ERROR ID=%v: %s %s\n", sessionID, err, ipAddress)
 		http.Error(w, "", http.StatusInternalServerError)
@@ -357,7 +357,7 @@ func (p *Proxy) ProxyHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Headers", "Authorization,Accept,Origin,DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Content-Range,Range")
 	w.Header().Set("Access-Control-Allow-Methods", "GET,POST,OPTIONS,PUT,DELETE,PATCH")
 
-	if p.logLevel == "debug" {
+	if p.LogLevel == "debug" {
 		fmt.Printf("RESPONSE ID=%v: %s [%s] %v %s %s %s\n", sessionID, ipAddress, time.Now().String(), resp.StatusCode, r.Method, r.URL, body)
 	}
 
@@ -365,32 +365,11 @@ func (p *Proxy) ProxyHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(body)
 }
 
-// Start ...
-func (p *Proxy) Start(urlPath string) error {
-	httpClient, err := p.createHTTPClient()
-	if err != nil {
-		return err
-	}
-
-	p.httpClient = httpClient
-
-	host := fmt.Sprintf("0.0.0.0:%v", p.port)
-	http.HandleFunc("/ping", p.PingHandler)
-	http.HandleFunc("/health", p.HealthCheckHandler)
-	http.HandleFunc(urlPath, p.ProxyHandler)
-
-	fmt.Printf("Proxying %s %s\n", p.proxyMethod, p.proxyURL.String())
-
-	fmt.Printf("Listening on 0.0.0.0:%v\n", p.port)
-	fmt.Printf("Leaky bucket limit per second: %v\n", p.leakyBucketLimitPerSecond)
-	fmt.Printf("Soft cap requests per minute for IP: %v\n", p.softCapIPRequestsPerMinute)
-	fmt.Printf("Hard cap requests per minute for IP: %v\n", p.hardCapIPRequestsPerMinute)
-	if p.logLevel != "" {
-		fmt.Printf("Log Level: %s\n", p.logLevel)
-	}
-	return http.ListenAndServe(host, nil)
+func (p *Proxy) SetHttpClient(client *http.Client) {
+	p.HttpClient = client
 }
 
+/*
 func (p *Proxy) createHTTPClient() (*http.Client, error) {
 	transport := &http.Transport{
 		MaxIdleConnsPerHost: p.maxIdleConnections,
@@ -404,9 +383,10 @@ func (p *Proxy) createHTTPClient() (*http.Client, error) {
 
 	return client, nil
 }
+*/
 
 // sendNotification ...
-func (p *Proxy) sendNotification(msg string) {
+func (p *Proxy) SendNotification(msg string) {
 	if p.slackWebhookURL == "" {
 		return
 	}
