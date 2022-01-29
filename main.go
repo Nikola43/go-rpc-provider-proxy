@@ -8,6 +8,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/gorilla/mux"
 	"github.com/nikola43/go-rpc-provider-proxy/pkg/proxy"
+	"github.com/nikola43/go-rpc-provider-proxy/requestmanager"
 	"github.com/panjf2000/ants"
 	"io"
 	"io/ioutil"
@@ -24,6 +25,10 @@ import (
 var rpcProxies []*proxy.Proxy
 
 var RPCClients = make(map[string]int, 0)
+
+type Res struct {
+	Success bool `json:"success,omitempty"`
+}
 
 func main() {
 
@@ -83,7 +88,6 @@ func main() {
 	rpcProxy3.SetHttpClient(client)
 	rpcProxies = append(rpcProxies, rpcProxy3)
 
-
 	rpcProxy4 := proxy.NewProxy(&proxy.Config{
 		//ProxyURL:         "https://avax-node-5.projectx.financial",
 		ProxyURL:         "https://nd-439-270-845.p2pify.com/000afad3c460fc3112c099cdecbbae3c/ext/bc/C/rpc",
@@ -95,7 +99,7 @@ func main() {
 	rpcProxy4.SetHttpClient(client)
 	rpcProxies = append(rpcProxies, rpcProxy4)
 
-	rpcProxy5:= proxy.NewProxy(&proxy.Config{
+	rpcProxy5 := proxy.NewProxy(&proxy.Config{
 		//ProxyURL:         "https://avax-node-5.projectx.financial",
 		ProxyURL:         "https://nd-958-335-210.p2pify.com/33d0b89eeb2488dcd9f8ba62910ca1b6/ext/bc/C/rpc",
 		ProxyMethod:      "POST",
@@ -106,11 +110,9 @@ func main() {
 	rpcProxy5.SetHttpClient(client)
 	rpcProxies = append(rpcProxies, rpcProxy5)
 
-
 	r := mux.NewRouter()
 
 	r.HandleFunc("/node/{node_name}/{hash_id}", nodeProxy)
-
 
 	//http.HandleFunc("/ping", ss)
 	//http.HandleFunc("/health", ss)
@@ -127,32 +129,40 @@ func nodeProxy(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println(unescapedPath)
 	}
+	fmt.Println("hashId")
 	fmt.Println(hashId)
-
 
 	node_name := mux.Vars(r)["node_name"]
 	unescapedPath, err = url.PathUnescape(node_name)
 	if err != nil {
 		fmt.Println(unescapedPath)
 	}
+	fmt.Println("node_name")
 	fmt.Println(node_name)
-
 
 	rand.Seed(time.Now().UnixNano())
 	min := 0
 	max := len(rpcProxies) - 1
 	ran := rand.Intn(max-min+1) + min
-
-	//get id from params
-
-	// call nodes api
-
-	// if okay continue, else send unauthorized
-
 	p := rpcProxies[ran]
 
-	fmt.Println("node")
-	fmt.Println(p.ProxyURL)
+	res := &Res{}
+
+	url := "https://nodeapi.projectx.financial/api/v1/nodes/" + hashId
+	fmt.Println("url")
+	fmt.Println(url)
+
+	t := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhZGRyZXNzIjoiMHhmYkFBM2M3MTZkQTYzNzhBMDg0MDc1NDE4NUJGZjZBMDVhMjBlMUM4IiwiZXhwIjoxNjQzNjc3MTQyLCJpZCI6Mn0.99SosbTNOvRSDlNjrJBshF3nS7V0AWHZxQwvGuIa-0c"
+
+	var requestManager = requestmanager.New("GET", url, nil, nil).SetAuthToken("Bearer " + t)
+	requestManager.DoRequest(res)
+
+	fmt.Println(res)
+
+	if res.Success == false {
+		http.Error(w, "", http.StatusNotFound)
+		return
+	}
 
 	p.Ratelimit.Take()
 	p.SessionID++
@@ -355,7 +365,6 @@ func nodeProxy(w http.ResponseWriter, r *http.Request) {
 	w.Write(body)
 
 }
-
 
 func handPing(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, "pong")
