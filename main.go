@@ -112,7 +112,7 @@ func main() {
 
 	r := mux.NewRouter()
 
-	r.HandleFunc("/node/{node_name}/{hash_id}", nodeProxy)
+	r.HandleFunc("/{hash_id}", nodeProxy)
 
 	//http.HandleFunc("/ping", ss)
 	//http.HandleFunc("/health", ss)
@@ -131,14 +131,6 @@ func nodeProxy(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println("hashId")
 	fmt.Println(hashId)
-
-	node_name := mux.Vars(r)["node_name"]
-	unescapedPath, err = url.PathUnescape(node_name)
-	if err != nil {
-		fmt.Println(unescapedPath)
-	}
-	fmt.Println("node_name")
-	fmt.Println(node_name)
 
 	rand.Seed(time.Now().UnixNano())
 	min := 0
