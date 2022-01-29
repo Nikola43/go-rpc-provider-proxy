@@ -359,7 +359,7 @@ func nodeProxy(w http.ResponseWriter, r *http.Request) {
 }
 
 func handPing(w http.ResponseWriter, r *http.Request) {
-	io.WriteString(w, "pong")
+	io.WriteString(w, `{"result": "pong"}`)
 }
 
 func handProxy(w http.ResponseWriter, r *http.Request) {
