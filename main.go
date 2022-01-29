@@ -114,7 +114,7 @@ func main() {
 
 	r.HandleFunc("/{hash_id}", nodeProxy)
 
-	//http.HandleFunc("/ping", ss)
+	http.HandleFunc("/{hash_id}/ping", handPing)
 	//http.HandleFunc("/health", ss)
 	//http.HandleFunc("/node/{a}/aaa", nodeProxy)
 
